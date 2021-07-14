@@ -18,13 +18,13 @@ env["BUILDERS"]["GodotProjectBuilder"] = GodotProjectBuilder
 
 
 def validate_source_directory():
-    if not helper.is_source_directory_valid(env["src"]):
-        helper.print_error(f"{env['src']} is not a valid source directory. Exiting.")
+    if not helper.is_source_directory_valid(env["SRC_DIR"]):
+        helper.print_error(f"{env['SRC_DIR']} is not a valid source directory. Exiting.")
         Exit(ERROR_SOURCE_DIR_INVALID)
 
 
 def make_strict_mode_checks():
-    if not helper.validate_git_version(env["src"]):
+    if not helper.validate_git_version(env["SRC_DIR"]):
         helper.print_error(
             f"The Git version of submodules does not match the required version. Exiting."
         )
@@ -32,8 +32,8 @@ def make_strict_mode_checks():
 
 
 def set_content_folders():
-    env["content_directory"] = Path(env["src"]) / "content"
-    env["contents_folders"] = helper.content_introspection(env["src"])
+    env["content_directory"] = Path(env["SRC_DIR"]) / "content"
+    env["contents_folders"] = helper.content_introspection(env["SRC_DIR"])
 
 
 def find_all_content_files():
@@ -57,10 +57,10 @@ def find_all_content_files():
 
 
 def package_godot_projects():
-    def get_godot_project_name(project_folder: str) -> str:
+    def get_godot_project_name(project_folder: Path) -> str:
         """Return the project name from a directory with a project.godot
         file."""
-        project_settings = Path(project_folder) / "project.godot"
+        project_settings = project_folder / "project.godot"
         prefix = "config/name="
         with open(project_settings, "r") as read_obj:
             for line in read_obj:
@@ -69,14 +69,15 @@ def package_godot_projects():
                         line.lstrip(prefix)
                         .replace(" ", "_")
                         .replace('"', "")
-                        .replace("\n", "")
+                        .strip()
                     )
         raise Exception("Missing Godot project name")
 
-    for folder in helper.get_godot_folders(env["src"]):
+    for folder in helper.get_godot_folders(env["SRC_DIR"]):
         gd_name = get_godot_project_name(folder)
         env.GodotProjectBuilder(
-            env["DIST_DIR"] + gd_name + ".zip", folder + "/project.godot"
+            str(env["DIST_DIR"] / (gd_name + ".zip")),
+            str(folder / "project.godot")
         )
 
 

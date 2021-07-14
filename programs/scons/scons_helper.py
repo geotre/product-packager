@@ -4,11 +4,12 @@ from pathlib import Path
 import colorama
 
 colorama.init(autoreset=True)
-cwd_base = Path(__file__).parent.absolute().as_posix()
+cwd_base = Path(__file__).parent.resolve()
 
 
 def validate_git_version(source_dir: str) -> bool:
-    """Compares git release tags, of root and godot projects to make sure they are identical"""
+    """Compares git release tags, of root and godot projects to make sure they
+    are identical"""
     godot_projects = get_godot_folders(source_dir)
     godot_projects.append(source_dir)
     result_set = {}
@@ -45,14 +46,15 @@ def content_introspection(source_dir: str) -> list:
     return [folder for folder in content_directory.iterdir() if folder.is_dir()]
 
 
-def get_godot_folders(root_dir: str) -> list:
+def get_godot_folders(root_dir: Path) -> list[Path]:
     """Return a list of all folders containing a project.godot file"""
-    projects = [p.parent.as_posix() for p in Path(root_dir).glob("**/project.godot")]
+    projects = [p.parent for p in Path(root_dir).glob("**/project.godot")]
     return projects
 
 
 def bundle_godot_project(target, source, env):
-    """A SCons Builder script, builds a godot project directory into a zip file"""
+    """A SCons Builder script, builds a godot project directory
+    into a zip file."""
     zipfile_path = Path(target[0].abspath)
     target_directory = zipfile_path.parent
     godot_project_directory = Path(source[0].abspath).parent

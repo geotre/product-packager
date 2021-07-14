@@ -1,4 +1,3 @@
-Import("env")
 import subprocess
 from pathlib import Path
 from typing import List
@@ -10,30 +9,26 @@ import include
 import link
 from scons_helper import print_success, print_error
 import table_of_contents
+Import("env")
 
-print_success(f"Building {env['src']} as standalone HTML files.")
+print_success(f"Building {env['SRC_DIR']} as standalone HTML files.")
 
 this_directory: Path = Path(os.getcwd())
 
-VariantDir(env["BUILD_DIR"], env["src"], duplicate=False)
-VariantDir(env["DIST_DIR"], env["src"], duplicate=False)
+VariantDir(env["BUILD_DIR"], env["SRC_DIR"], duplicate=False)
+VariantDir(env["DIST_DIR"], env["SRC_DIR"], duplicate=False)
 
 Clean(env["DIST_DIR"], env["BUILD_DIR"])
 
 def install_media_files(
     content_directory: Path, source_media_files: List[Path]
-) -> list:
+) -> list[File]:
     media_files = []
     for path in source_media_files:
-        media_build_path: str = (
-            env["BUILD_DIR"] + path.relative_to(content_directory).parent.as_posix()
-        )
-        media_files.append(
-            Install(
-                media_build_path,
-                path.as_posix(),
-            )
-        )
+        media_build_path: Path = (
+        env["BUILD_DIR"] / path.relative_to(content_directory).parent
+    )
+        media_files.append(Install(str(media_build_path), str(path)))
     return media_files
 
 
@@ -86,23 +81,20 @@ def process_markdown_file_in_place(target, source, env):
     return None
 
 
-def prepare_html_dependencies(content_directory: Path, media_files: list) -> list:
+def prepare_html_dependencies(content_directory: Path, media_files: list[File]) -> list[File]:
     html_nodes = []
     for markdown_path in env["markdown_files"]:
         markdown_file: Path = markdown_path.relative_to(content_directory)
         markdown_directory: Path = markdown_file.parent
-        Install(
-            env["BUILD_DIR"] + markdown_directory.as_posix(),
-            markdown_path.as_posix(),
-        )
-        target = env["BUILD_DIR"] + markdown_file.as_posix()
-        build_html_file = env.HTMLBuilder(target)
+        Install(str(env["BUILD_DIR"] / markdown_directory), str(markdown_path))
+        target = env["BUILD_DIR"] / markdown_file
+        build_html_file = env.HTMLBuilder(str(target))
         for media_file in media_files:
             Depends(build_html_file, media_file)
         # export the html file to the dist dir
         html_nodes += Install(
-            env["DIST_DIR"] + markdown_directory.as_posix(),
-            build_html_file,
+            str(env["DIST_DIR"] / markdown_directory),
+            build_html_file
         )
     return html_nodes
 
@@ -111,7 +103,7 @@ def generate_cheatsheet(html_nodes: list) -> None:
     def build_cheatsheet(target, source, env):
         """A SCons Builder script, generates a cheatsheet, using a python file
         in the target directory"""
-        cheat_path = Path(env["src"]) / Path("content")
+        cheat_path = Path(env["SRC_DIR"]) / Path("content")
         out = subprocess.run(
             ["./generate_cheatsheet.py", ".", "../dist"],
             capture_output=True,
@@ -180,6 +172,6 @@ if env.GetOption("mavenseed"):
         input_file: Path = Path(html_node.abspath)
         chapter_name: str = input_file.parent.name
         output_file = Path(env["DIST_DIR"], "mavenseed", chapter_name, input_file.name)
-        mavenseed_output_file_node = env.MavenseedBuilder(output_file.as_posix(), html_node)
+        mavenseed_output_file_node = env.MavenseedBuilder(str(output_file), html_node)
         mavenseed_files += Depends(mavenseed_output_file_node, html_node)
     Return('mavenseed_files')
