@@ -6,11 +6,6 @@ import colorama
 from SCons.Script import Dir, File
 
 
-def is_source_directory_valid(source_dir: Dir) -> bool:
-    """Returns whether the directory contains a content folder"""
-    return source_dir.Dir("content").exists()
-
-
 def get_godot_project_files(dir: Dir) -> list[File]:
     """Return a list of all folders containing a project.godot file"""
     return [File(p) for p in Path(str(dir)).glob("**/project.godot")]
@@ -41,12 +36,6 @@ def validate_git_versions(source_dir: Dir) -> bool:
         print_error(key + " : " + value)
 
     return ret
-
-
-def content_list(content_dir: Dir) -> list[Dir]:
-    """Returns a list of folders within the content folder"""
-    content_path_dir = Path(str(content_dir))
-    return [Dir(str(d)) for d in content_path_dir.iterdir() if d.is_dir()]
 
 
 def print_success(*args, **kwargs):

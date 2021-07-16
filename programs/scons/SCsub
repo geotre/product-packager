@@ -20,11 +20,13 @@ env.VariantDir(env["DIST_DIR"], env["SRC_DIR"], duplicate=False)
 env.Clean("", [env["DIST_DIR"], env["BUILD_DIR"]])
 
 
-def targets_relative_to(
-    dest: Dir, relative: Dir, source_files: list[File]
+def calculate_target_file_paths(
+    destination: Dir, relative_dir: Dir, source_files: list[File]
 ) -> list[File]:
+    """Returns the list of files taking their path from relative_dir and
+    appending it to destination."""
     return [
-        env.File(Path(str(sf)).relative_to(str(relative)), directory=dest)
+        env.File(Path(str(sf)).relative_to(str(relative_dir)), directory=destination)
         for sf in source_files
     ]
 
@@ -32,7 +34,7 @@ def targets_relative_to(
 def process_markdown_file_in_place(
     target: list[File], source: list[File], env: Environment
 ) -> None:
-    """A SCons Builder script, builds a markdown file into a rendered html file."""
+    """Builds a markdown file into a rendered html file."""
     source_file = Path(str(source[0]))
     content: str = ""
     with open(source_file, "r") as sf:
@@ -51,7 +53,7 @@ def process_markdown_file_in_place(
         sf.write(content)
 
     command = [
-        env["PP_DIR"].File("convert_markdown.py"),
+        env["PRODUCT_PACKAGER_DIR"].File("convert_markdown.py"),
         source_file,
         "--output-directory",
         env["BUILD_DIR"],
@@ -63,7 +65,7 @@ def process_markdown_file_in_place(
 
 
 def prepare_html_dependencies(media_files: list[File]) -> list[File]:
-    build_files = targets_relative_to(
+    build_files = calculate_target_file_paths(
         env["BUILD_DIR"], env["CONTENT_DIR"], env["MARKDOWN_FILES"]
     )
     env.InstallAs(build_files, env["MARKDOWN_FILES"])
@@ -72,7 +74,7 @@ def prepare_html_dependencies(media_files: list[File]) -> list[File]:
     # TODO: depend only on specific `media_files` instead of everything.
     env.Depends(build_html_files, media_files)
     return env.InstallAs(
-        targets_relative_to(env["DIST_DIR"], env["BUILD_DIR"], build_html_files),
+        calculate_target_file_paths(env["DIST_DIR"], env["BUILD_DIR"], build_html_files),
         build_html_files,
     )
 
@@ -88,7 +90,7 @@ HTMLBuilder = env.Builder(
 env["BUILDERS"]["HTMLBuilder"] = HTMLBuilder
 
 media_files = env.InstallAs(
-    targets_relative_to(env["BUILD_DIR"], env["CONTENT_DIR"], env["MEDIA_FILES"]),
+    calculate_target_file_paths(env["BUILD_DIR"], env["CONTENT_DIR"], env["MEDIA_FILES"]),
     env["MEDIA_FILES"],
 )
 html_files = prepare_html_dependencies(media_files)
@@ -99,7 +101,7 @@ if env.GetOption("mavenseed"):
         target_dir = env["DIST_DIR"].Dir("mavenseed").Dir(html_file.Dir(".").name)
         target_file = target_dir.File(html_file.name)
         command = [
-            env["PP_DIR"].File("prepare_for_mavenseed.py"),
+            env["PRODUCT_PACKAGER_DIR"].File("prepare_for_mavenseed.py"),
             "--output-directory",
             target_dir,
             "--overwrite",

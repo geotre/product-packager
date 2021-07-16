@@ -22,8 +22,10 @@ class Error(Enum):
     MISSING_GODOT_PROJECT_NAME = 3
 
 
-def validate_source_directory():
-    if not sh.is_source_directory_valid(env["SRC_DIR"]):
+def validate_source_directory() -> None:
+    """Ensures the source directory contains a content folder."""
+    is_source_directory_valid: bool = env["SRC_DIR"].Dir("content").exists()
+    if not is_source_directory_valid:
         sh.print_error(f"ERROR: {env['SRC_DIR']} is not a valid source directory!")
         env.Exit(Error.SOURCE_DIR_INVALID)
 
@@ -80,12 +82,18 @@ def glob_extensions(dir: Dir, extensions: list[str]) -> Iterator[File]:
     return (File(f) for e in extensions for f in Path(str(dir)).glob("**/" + e))
 
 
+def find_subdirectories(content_dir: Dir) -> list[Dir]:
+    """Returns a list of folders within the content folder"""
+    content_path_dir = Path(str(content_dir))
+    return [Dir(str(d)) for d in content_path_dir.iterdir() if d.is_dir()]
+
+
 validate_source_directory()
 if env.GetOption("strict"):
     make_strict_mode_checks()
 
 env["CONTENT_DIR"] = env["SRC_DIR"].Dir("content")
-env["CONTENT_DIRS"] = sh.content_list(env["CONTENT_DIR"])
+env["CONTENT_DIRS"] = find_subdirectories(env["CONTENT_DIR"])
 env["MEDIA_FILES"] = [
     f
     for d in env["CONTENT_DIRS"]
