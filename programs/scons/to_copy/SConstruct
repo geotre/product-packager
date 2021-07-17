@@ -21,26 +21,26 @@ env["BUILD_DIR"] = env["SRC_DIR"].Dir("build")
 env["DIST_DIR"] = env["SRC_DIR"].Dir("dist")
 env["PRODUCT_PACKAGER_DIR"] = Dir(os.environ.get("PATH_TO_PRODUCT_PACKAGER"))
 
-if os.environ.has("PYTHONUSERBASE"):
+if os.environ.get("PYTHONUSERBASE", ""):
     env["ENV"]["PYTHONUSERBASE"] = os.environ["PYTHONUSERBASE"]
 
 Export("env")
 mavenseed_files = env.SConscript(env["PRODUCT_PACKAGER_DIR"].File("SConstruct"))
 
-# if env.GetOption("mavenseed"):
-#     MavenseedMoveBuilder = env.Builder(
-#         action=move_mavenseed_node_guides_outside_folders,
-#         suffix=".html",
-#         src_suffix=".html",
-#         single_source=1,
-#     )
-#     env["BUILDERS"]["MavenseedMoveBuilder"] = MavenseedMoveBuilder
-#     mavenseed_folder = env["DIST_DIR"].Dir("mavenseed")
-#     IGNORED_FOLDERS = ["00.introduction"]
-# for f in mavenseed_files:
-#         path: Path = Path(f.abspath)
-#         if path.parent.name in IGNORED_FOLDERS:
-#             continue
-#         moved_file = mavenseed_folder / f.name
-#         mavenseed_flatten_output = env.MavenseedMoveBuilder(str(moved_file), f)
-#         env.Depends(mavenseed_flatten_output, f)
+if env.GetOption("mavenseed"):
+    MavenseedMoveBuilder = env.Builder(
+        action=move_mavenseed_node_guides_outside_folders,
+        suffix=".html",
+        src_suffix=".html",
+        single_source=1,
+    )
+    env["BUILDERS"]["MavenseedMoveBuilder"] = MavenseedMoveBuilder
+    mavenseed_folder = env["DIST_DIR"].Dir("mavenseed")
+    IGNORED_FOLDERS = ["00.introduction"]
+for f in mavenseed_files:
+    path: Path = Path(f.abspath)
+    if path.parent.name in IGNORED_FOLDERS:
+        continue
+    moved_file = mavenseed_folder / f.name
+    mavenseed_flatten_output = env.MavenseedMoveBuilder(str(moved_file), f)
+    env.Depends(mavenseed_flatten_output, f)
