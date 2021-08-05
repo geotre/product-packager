@@ -1,7 +1,6 @@
 from pathlib import Path
 from enum import Enum
 from typing import Iterator, List
-import fileinput
 
 from scons_helper import (
     calculate_target_file_paths,
