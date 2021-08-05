@@ -78,7 +78,7 @@ def try_package_godot_projects() -> None:
             target=build_file,
             source=source_file,
             action=[
-                ["sed", "-Ei", "'/# ?(ANCHOR|END)/d'", "$SOURCE", ">", "$TARGET"],
+                ["sed", "-Ei", "/# ?(ANCHOR|END)/d", "$SOURCE", ">", "$TARGET"],
             ],
         )
 
@@ -95,7 +95,8 @@ def try_package_godot_projects() -> None:
 
         zip_file_path = env["DIST_DIR"].File(project_name + ".zip")
         source_directory = godot_project_file.Dir(".")
-        env.Depends(zip_file_path, source_directory)
+        env.Depends(zip_file_path, godot_project_file)
+        env.Depends(zip_file_path, gdscript_build_files)
         env.Command(
             target=zip_file_path,
             source=source_directory,
