@@ -84,13 +84,14 @@ def try_package_godot_projects() -> None:
         )
 
     # TODO: Copy all Godot projects to the build directory
-    env.Depends(godot_build_files, godot_project_dirs)
+    env.Depends(godot_build_files, godot_project_files)
+    env.InstallAs(godot_build_files, godot_project_files)
 
-    for godot_project_file in godot_build_files:
-        project_name = get_godot_project_name(godot_project_file)
+    for godot_source_file, godot_project_file in zip(godot_project_files, godot_build_files):
+        project_name = get_godot_project_name(godot_source_file)
 
         if project_name == "":
-            print_error(f"ERROR: Missing Godot project name in {godot_project_file}!")
+            print_error(f"ERROR: Missing Godot project name in {godot_source_file}!")
             env.Exit(Error.MISSING_GODOT_PROJECT_NAME)
 
         zip_file_path = env["DIST_DIR"].File(project_name + ".zip")
